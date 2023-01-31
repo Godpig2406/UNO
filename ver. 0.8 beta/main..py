@@ -15,13 +15,13 @@ class card:
 
     def change_color(self,player):
         line = input(f"{player.name}, please pick a color (B)lue, (G)reen, (R)ed, (Y)ellow \n").upper()
-        if line == "B":
+        if line == "B" or line == "1":
             self.color = "BLUE"
-        elif line == "G":
+        elif line == "G" or line == "2":
             self.color = "GREEN"
-        elif line == "R":
+        elif line == "R" or line == "3":
             self.color = "RED"
-        elif line == "Y":
+        elif line == "Y" or line == "4":
             self.color = "YELLOW"
 
 
@@ -65,7 +65,7 @@ class player:
                     self.hand.pop(choice)
                     return record
 
-        elif choice.upper() == "D":
+        elif choice.upper() == "D" or choice.upper() == "+":
             self.deal(1)
             return current
 
@@ -92,7 +92,7 @@ class player:
                     next_player.deal(2)
 
                 elif card.properties == "skip":
-                    pass
+                    return
 
 
 class procedures:
@@ -163,17 +163,34 @@ for cards in deck:
         played.append(current)
         break
 
-while True:
-    for player in players:
-        next_player = procedures.next_player(players, player)
-        if player.punished:
-            player.punished = False
-            break
+playing=True
+i=0
 
-        if not player.punished:
-            player_avaliable = player.check_playable(current)
-            player_chosen = player.choose(player_avaliable)
-            if player_chosen != current:
-                current = player_chosen
-                played.append(current)
-                player.special_effects(current, next_player)
+while True:
+    player = players[i]
+    if i+1 == len(players):
+        i=0
+        next_player = players[0]
+    elif i+1 != len(players):
+        next_player=players[i+1]
+        i=i+1
+
+    next_player = procedures.next_player(players, player)
+
+    if not player.punished:
+        player_avaliable = player.check_playable(current)
+        player_chosen = player.choose(player_avaliable)
+        if player_chosen != current:
+            current = player_chosen
+            played.append(current)
+            player.special_effects(current, next_player)
+            if len(player.hand) == 0:
+                winner=player
+                playing=False
+                break
+
+    if player.punished:
+        player.punished = False
+        print(f"Skipped {player.name}")
+
+print(f"{player.name} wins!!!")
