@@ -27,15 +27,14 @@ class card:
 
 class player:
 
-    def __init__(self, id, name, punished, next_player_id):
+    def __init__(self, id, name, punished):
         self.id = id
         self.name = name
         self.punished = punished
         self.hand = []
-        self.next_player_id = next_player_id
+        self.neighbors = []
 
-    def deal(self, amount):
-        global deck
+    def deal(self, amount, deck):
         for i in range(amount):
             self.hand.append(deck[0])
             deck.pop(0)
@@ -47,7 +46,7 @@ class player:
                 playable.append(card)
         return playable
 
-    def choose(self, avaliable):
+    def choose(self, avaliable, deck, current):
         avaliable_uid = [i.uid for i in avaliable]
         print(f"{self.name}'s turn")
         for i in range(len(self.hand)):
@@ -66,12 +65,15 @@ class player:
                     return record
 
         elif choice.upper() == "D" or choice.upper() == "+":
-            self.deal(1)
+            self.deal(1,deck)
             return current
 
-    def special_effects(self, card, next_player):
+        else:
+            return "a"
+
+    def special_effects(self, card, next_player, deck):
         if not card.special:
-            return
+            return False
 
         elif card.special:
             next_player.punished = True
@@ -79,7 +81,7 @@ class player:
             if card.color == "black":
 
                 if card.properties == "+4":
-                    next_player.deal(4)
+                    next_player.deal(4,deck)
                     card.change_color(self)
 
                 elif card.properties == "change":
@@ -89,17 +91,20 @@ class player:
             elif card.color != "black":
 
                 if card.properties == "+2":
-                    next_player.deal(2)
+                    next_player.deal(2, deck)
 
                 elif card.properties == "skip":
-                    return
+                    return False
+
+                elif card.properties == "reverse":
+                    return True
 
 
 class procedures:
 
     def generateUid():
         while True:
-            UID = random.randint(0, 111)
+            UID = random.randint(0, 255)
             if UID in UIDs:
                 pass
             else:
@@ -107,15 +112,22 @@ class procedures:
                 break
         return UID
 
+    def create_neighbors(list_of_players):
+        for player in range(len(list_of_players)):
+            player.neighbors=[]
+
     def create():
         for color in ["RED", "GREEN", "BLUE", "YELLOW"]:
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "skip", f"{color} skip"))
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "skip", f"{color} skip"))
             ancestor_cards.append(card(procedures.generateUid(), True, color, "+2", f"{color} +2"))
             ancestor_cards.append(card(procedures.generateUid(), True, color, "+2", f"{color} +2"))
+            ancestor_cards.append(card(procedures.generateUid(), True, color, "skip", f"{color} skip"))
+            ancestor_cards.append(card(procedures.generateUid(), True, color, "skip", f"{color} skip"))
+            ancestor_cards.append(card(procedures.generateUid(), True, color, "reverse", f"{color} reverse"))
+            ancestor_cards.append(card(procedures.generateUid(), True, color, "reverse", f"{color} reverse"))
             ancestor_cards.append(card(procedures.generateUid(), True, "black", "+4", "Wild +4"))
             ancestor_cards.append(card(procedures.generateUid(), True, "black", "change", "Change color"))
             for num in [str(i) for i in range(10)]:
+                ancestor_cards.append(card(procedures.generateUid(), False, color, num, f"{color} {num}"))
                 ancestor_cards.append(card(procedures.generateUid(), False, color, num, f"{color} {num}"))
 
     def check_valid(old, new):
@@ -142,18 +154,30 @@ class procedures:
             if i.id == current_player.next_player_id:
                 return i
 
+    def reverse_play(player_list, current_player):
+        for i in player_list:
+            if i.next_player_id > 1:
+                i.next_player_id = i.next_player_id -1
+            
+            elif i.next_player_id == 1:
+                i.next_player_id = player_list[-1].id
+
 
 procedures.create()
 deck = ancestor_cards.copy()
 random.shuffle(deck)
-
+ 
 name1 = "God"
 name2 = "Pig"
-p1 = player(1, name1, False, 2)
-p2 = player(2, name2, False, 1)
-players = [p1, p2]
-p1.deal(7)
-p2.deal(7)
+name3 = "sa"
+p1 = player(1, name1, False)
+p2 = player(2, name2, False)
+p3 = player(3, name3, False)
+players = [p1, p2, p3]
+procedures.create_neighbors(players)
+p1.deal(7,deck)
+p2.deal(7,deck)
+p3.deal(7,deck)
 
 played = []
 
@@ -163,34 +187,28 @@ for cards in deck:
         played.append(current)
         break
 
-playing=True
-i=0
+current_p=players[0]
+next_player=procedures.next_player(players, current_p)
 
 while True:
-    player = players[i]
-    if i+1 == len(players):
-        i=0
-        next_player = players[0]
-    elif i+1 != len(players):
-        next_player=players[i+1]
-        i=i+1
-
-    next_player = procedures.next_player(players, player)
-
-    if not player.punished:
-        player_avaliable = player.check_playable(current)
-        player_chosen = player.choose(player_avaliable)
+    next_player = procedures.next_player(players, current_p)
+    if not current_p.punished:
+        player_avaliable = current_p.check_playable(current)
+        player_chosen = current_p.choose(player_avaliable,deck, current)
         if player_chosen != current:
             current = player_chosen
             played.append(current)
-            player.special_effects(current, next_player)
-            if len(player.hand) == 0:
-                winner=player
-                playing=False
+            reversed=current_p.special_effects(current, next_player, deck)
+            if len(current_p.hand) == 0:
+                winner=current_p
                 break
+            elif reversed:
+                procedures.reverse_play(players, current_p)
 
-    if player.punished:
-        player.punished = False
-        print(f"Skipped {player.name}")
+    if current_p.punished:
+        current_p.punished = False
+        print(f"Skipped {current_p.name}")
 
-print(f"{player.name} wins!!!")
+    current_p=next_player
+
+print(f"{current_p.name} wins!!!")
