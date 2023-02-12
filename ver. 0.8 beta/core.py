@@ -39,6 +39,26 @@ class player:
             self.hand.append(deck[0])
             deck.pop(0)
 
+    def create_neighbors(self, players):
+        for i in range(len(players)):
+            if players[i] == self:
+                id=self.id
+                break
+        if len(players) <= 2:
+            if i == 0:
+                self.neighbors=[players[1],players[1]]
+
+        elif len(players) >= 3:
+            prev, after = i-1, i+1
+
+            if i == 0:
+                prev=-1
+            
+            elif i == len(players)-1:
+                after = 0
+
+            self.neighbors = [players[prev], players[after]]
+
     def check_playable(self, current):
         playable = []
         for card in self.hand:
@@ -66,7 +86,7 @@ class player:
 
         elif choice.upper() == "D" or choice.upper() == "+":
             self.deal(1,deck)
-            return current
+            return None
 
         else:
             return "a"
@@ -97,12 +117,22 @@ class player:
                     return False
 
                 elif card.properties == "reverse":
+                    next_player.punished = False
                     return True
 
 
 class procedures:
+    def __init__(self, status=None, deck=None, played=None, players=None, clockwise=None, current_player=None, next_player=None, current=None):
+        self.status = status #number of players and etc.
+        self.deck=deck
+        self.played=played
+        self.players=players
+        self.clockwise=clockwise
+        self.current_player=current_player
+        self.next_player=next_player
+        self.current=current
 
-    def generateUid():
+    def gen_Uid():
         while True:
             UID = random.randint(0, 255)
             if UID in UIDs:
@@ -112,23 +142,19 @@ class procedures:
                 break
         return UID
 
-    def create_neighbors(list_of_players):
-        for player in range(len(list_of_players)):
-            player.neighbors=[]
-
     def create():
         for color in ["RED", "GREEN", "BLUE", "YELLOW"]:
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "+2", f"{color} +2"))
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "+2", f"{color} +2"))
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "skip", f"{color} skip"))
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "skip", f"{color} skip"))
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "reverse", f"{color} reverse"))
-            ancestor_cards.append(card(procedures.generateUid(), True, color, "reverse", f"{color} reverse"))
-            ancestor_cards.append(card(procedures.generateUid(), True, "black", "+4", "Wild +4"))
-            ancestor_cards.append(card(procedures.generateUid(), True, "black", "change", "Change color"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, color, "+2", f"{color} +2"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, color, "+2", f"{color} +2"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, color, "skip", f"{color} skip"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, color, "skip", f"{color} skip"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, color, "reverse", f"{color} reverse"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, color, "reverse", f"{color} reverse"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, "black", "+4", "Wild +4"))
+            ancestor_cards.append(card(procedures.gen_Uid(), True, "black", "change", "Change color"))
             for num in [str(i) for i in range(10)]:
-                ancestor_cards.append(card(procedures.generateUid(), False, color, num, f"{color} {num}"))
-                ancestor_cards.append(card(procedures.generateUid(), False, color, num, f"{color} {num}"))
+                ancestor_cards.append(card(procedures.gen_Uid(), False, color, num, f"{color} {num}"))
+                ancestor_cards.append(card(procedures.gen_Uid(), False, color, num, f"{color} {num}"))
 
     def check_valid(old, new):
         if not old.special and not new.special:
@@ -149,66 +175,61 @@ class procedures:
             if old.color == new.color or old.properties == new.properties or new.color == "black":
                 return True
 
-    def next_player(list_of_players, current_player):
-        for i in list_of_players:
-            if i.id == current_player.next_player_id:
-                return i
-
-    def reverse_play(player_list, current_player):
-        for i in player_list:
-            if i.next_player_id > 1:
-                i.next_player_id = i.next_player_id -1
-            
-            elif i.next_player_id == 1:
-                i.next_player_id = player_list[-1].id
+    def gen_next_player(current_player, clockwise):
+        if clockwise:
+            return current_player.neighbors[1]
+        elif not clockwise:
+            return current_player.neighbors[0]
 
 
+game = procedures([3])
 procedures.create()
-deck = ancestor_cards.copy()
-random.shuffle(deck)
- 
+game.deck = ancestor_cards.copy()
+random.shuffle(game.deck)
 name1 = "God"
 name2 = "Pig"
 name3 = "sa"
 p1 = player(1, name1, False)
 p2 = player(2, name2, False)
 p3 = player(3, name3, False)
-players = [p1, p2, p3]
-procedures.create_neighbors(players)
-p1.deal(7,deck)
-p2.deal(7,deck)
-p3.deal(7,deck)
+game.players = [p1, p2, p3]
+for i in game.players:
+    i.create_neighbors(game.players)
+    i.deal(7,game.deck)
 
-played = []
+game.played = []
 
-for cards in deck:
+for cards in game.deck:
     if not cards.special:
-        current = cards
-        played.append(current)
+        game.current = cards
+        game.played.append(game.current)
         break
 
-current_p=players[0]
-next_player=procedures.next_player(players, current_p)
-
+game.clockwise = True
+game.current_player=game.players[0]
+game.next_player=procedures.gen_next_player(game.current_player, game.clockwise)
 while True:
-    next_player = procedures.next_player(players, current_p)
-    if not current_p.punished:
-        player_avaliable = current_p.check_playable(current)
-        player_chosen = current_p.choose(player_avaliable,deck, current)
-        if player_chosen != current:
-            current = player_chosen
-            played.append(current)
-            reversed=current_p.special_effects(current, next_player, deck)
-            if len(current_p.hand) == 0:
-                winner=current_p
+    game.next_player = procedures.gen_next_player(game.current_player, game.clockwise)
+    if not game.current_player.punished:
+        player_avaliable = game.current_player.check_playable(game.current)
+        player_chosen = game.current_player.choose(player_avaliable, game.deck, game.current)
+        if player_chosen != None:
+            game.current = player_chosen
+            game.played.append(game.current)
+            reversed=game.current_player.special_effects(game.current, game.next_player, game.deck)
+            if reversed:
+                print("reversed")
+                game.clockwise = not game.clockwise
+                game.next_player=procedures.gen_next_player(game.current_player, game.clockwise)
+            if len(game.current_player.hand) == 0:
+                winner=game.current_player
                 break
-            elif reversed:
-                procedures.reverse_play(players, current_p)
 
-    if current_p.punished:
-        current_p.punished = False
-        print(f"Skipped {current_p.name}")
 
-    current_p=next_player
+    if game.current_player.punished:
+        game.current_player.punished = False
+        print(f"Skipped {game.current_player.name}")
 
-print(f"{current_p.name} wins!!!")
+    game.current_player=game.next_player
+
+print(f"{game.current_player.name} wins!!!")
