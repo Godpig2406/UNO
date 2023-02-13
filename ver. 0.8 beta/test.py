@@ -1,11 +1,5 @@
-class a:
-    def __init__(self,b,c):
-        self.b = b
-        self.c = c
+import random
 
-d=a(1,2)
-e=a(4,3)
-f=[d,e]
-
-z=f.index(a(1,2))
-print(z)
+a=[1]
+a[1]=3
+print(a)
