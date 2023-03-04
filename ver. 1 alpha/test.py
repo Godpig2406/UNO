@@ -1,1 +1,0 @@
-raise Exception(f"{type(4)}")

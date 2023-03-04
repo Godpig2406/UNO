@@ -10,6 +10,9 @@ ADDR=(SERVER,PORT)
 client=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(ADDR)
 
+def request(message):
+    print(message)
+
 def send(msg):
     message=msg.encode(FORMAT)
     msg_length=len(message)
@@ -17,7 +20,7 @@ def send(msg):
     send_length += b" " *(HEADER-len(send_length))
     client.send(send_length)
     client.send(message)
-    print(client.recv(64).decode(FORMAT))
+    request(client.recv(64).decode(FORMAT))
 
 send("hello world!")
 send("world!")

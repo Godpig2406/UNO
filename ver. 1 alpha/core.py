@@ -1,17 +1,8 @@
 import random
+from com import  *
 
 ancestor_cards = []
 UIDs = [0]
-
-def api(mode, content):
-    if mode == "input":
-        return input(content)
-
-    elif mode == "output":
-        print(content)
-
-    else:
-        raise ValueError(f"Invalid api mode: {mode}")
 
 class card:
     def __init__(self, uid, special, color, properties, name):
