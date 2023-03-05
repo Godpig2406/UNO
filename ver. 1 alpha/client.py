@@ -26,4 +26,4 @@ send("hello world!")
 send("world!")
 send("gospig")
 
-# send(DISCONNECT_MSG)
+send(DISCONNECT_MSG)

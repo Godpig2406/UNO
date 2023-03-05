@@ -1,5 +1,5 @@
 import random
-from com import  *
+import com
 
 ancestor_cards = []
 UIDs = [0]
@@ -14,7 +14,7 @@ class card:
 
     def change_color(self, player):
         while True:
-            line = api("input", f"{player.name}, please pick a color (B)lue, (G)reen, (R)ed, (Y)ellow \n").upper()
+            line = com.api("input", f"{player.name}, please pick a color (B)lue, (G)reen, (R)ed, (Y)ellow \n").upper()
             if line == "B" or line == "1":
                 self.color = "BLUE"
                 break
@@ -34,9 +34,6 @@ class card:
             else:
                 raise ValueError("Change color")
 
-    def debug(self):
-        return f"{self.uid, self.special, self.color, self.properties, self.name}"
-
 
 class player:
 
@@ -47,6 +44,7 @@ class player:
         self.hand = []
         self.neighbors = []
         self.chosen = None
+        self.avaliable = None
 
     def debug(self):
         return f"{self.id, self.name, self.punished, self.hand, self.hand, self.neighbors, self.chosen}"
@@ -84,62 +82,62 @@ class player:
         for card in self.hand:
             if procedures.check_valid(current, card):
                 playable.append(card)
-        
-        return playable
+        self.avaliable = playable
 
-    def choose(self, avaliable, game):
-        avaliable_uid = [i.uid for i in avaliable]
-        api("output", f"{self.name}'s turn")
 
-        for i in range(len(self.hand)):
-            avaliable = ""
-            if self.hand[i].uid in avaliable_uid:
-                avaliable = "*"
+    def choose(self, game):
+        avaliable_uid = [i.uid for i in self.avaliable]
+        self.chosen = None
+        while True:
+            com.api("output", f"{self.name}'s turn")
+            for i in range(len(self.hand)):
+                avaliable = ""
+                if self.hand[i].uid in avaliable_uid:
+                    avaliable = "*"
 
-            api("output", f"[{i}]{self.hand[i].name}{avaliable}")
+                com.api("output", f"[{i}]{self.hand[i].name}{avaliable}")
 
-        api("output", f"Current card on the table is: {game.current.name}")
-        choice = api("input", "Choose a Card or (D)raw: ")
+            com.api("output", f"Current card on the table is: {game.current.name}")
+            choice = com.api("input", "Choose a Card or (D)raw: ")
 
-        if choice == "":
-            return False
+            if choice == "":
+                continue
+            
+            elif choice.isnumeric():
+                choice = int(choice)
+                if choice < len(self.hand) and choice >= 0:
 
-        if choice.isnumeric():
-            choice = int(choice)
-            if choice < (len(self.hand)) and choice >= 0:
+                    if self.hand[choice].uid in avaliable_uid:
+                        self.chosen = self.hand[choice]
+                        self.hand.pop(choice)
+                        break
 
-                if self.hand[choice].uid in avaliable_uid:
-                    record = self.hand[choice]
-                    self.hand.pop(choice)
-                    self.chosen = record
-                    return True
+                    else:
+                        com.api("output","Unvalid")
+                        continue
 
                 else:
-                    api("output","Unvalid")
-                    return False
+                    com.api("output","Out of range")
+                    continue
+
+            elif choice.upper() == "D" or choice.upper() == "+":
+                game.deal(self, 1)
+                drawed=self.hand[-1]
+                if procedures.check_valid(game.current, drawed):
+                    a = com.api("input", f"{self.name}, {drawed.name} is playable, (Y/n)")
+                    if a=="n" or a=="N" or a == "-":
+                        com.api("output","ok")
+                        self.chosen = None
+
+                    else:
+                        self.chosen = drawed
+                        self.hand.pop(-1)
+                    
+                break
 
             else:
-                api("output","Out of range")
-                return False
-
-        elif choice.upper() == "D" or choice.upper() == "+":
-            game.deal(self, 1)
-            drawed=self.hand[-1]
-            if procedures.check_valid(game.current, drawed):
-                a = api("input", f"{self.name}, {drawed.name} is playable, (Y/n)")
-                if a=="n" or a=="N" or a == "-":
-                    api("output","ok")
-                    self.chosen = None
-
-                else:
-                    self.chosen = drawed
-                
-
-            return True
-
-        else:
-            api("output","input error")
-            return False
+                com.api("output","input error")
+                continue
 
     def special_effects(self, game):
         card = game.current
@@ -177,9 +175,10 @@ class player:
 
 class procedures:
 
-    def __init__(self, status=None, deck=None):
-        self.status = status  #number of players and etc.
-        self.deck = deck
+    def __init__(self):
+        self.status = None
+        self.plr_num = 0
+        self.deck = None
         self.played = []
         self.players = []
         self.clockwise = True
@@ -187,6 +186,7 @@ class procedures:
         self.next_player = None
         self.current = None
         self.debug = False
+        self.rounds=0
 
     def gen_Uid(self):
         while True:
@@ -233,7 +233,7 @@ class procedures:
                 self.deck.pop(0)
             
             elif len(self.deck) == 0:
-                self.status.append(False)
+                self.status = False
                 break
 
             else:
@@ -263,34 +263,22 @@ class procedures:
             raise Exception("Comparing 2 cards")
 
     def gameloop(self):
-        global winner, winners
+        global winner
         while True:
+            self.rounds += 1
             self.gen_next_player()
             if not self.current_player.punished:
-                player_avaliable = self.current_player.check_playable(self.current)
-                while True:
-                    valid = self.current_player.choose(player_avaliable, self)
-                    if valid:
-                        break
+                self.current_player.check_playable(self.current)
+                self.current_player.choose(self)
+                player_played = self.current_player.chosen
 
-                if len(self.status) == 2:#additional status when game ends
-                    highest=max([len(i.hand) for i in self.players])
-
-                    winners=[ i for i in self.players if len(i.hand) == highest]
-                    for i in self.players:
-                        if len(i.hand) == highest:
-                            winner = i
-                    break
-
-                player_chosen = self.current_player.chosen
-
-                if player_chosen != None:
-                    self.current = player_chosen
+                if isinstance(player_played, card):
+                    self.current = player_played
                     self.played.append(self.current)
                     reversed = self.current_player.special_effects(self)
 
                     if reversed:
-                        api("output","reversed")
+                        com.api("output","reversed")
                         self.clockwise = not self.clockwise
                         self.gen_next_player()
 
@@ -298,12 +286,39 @@ class procedures:
                         winner = self.current_player
                         break
 
+
             elif self.current_player.punished:
                 self.current_player.punished = False
-                api("output", f"Skipped {self.current_player.name}")
+                com.api("output", f"Skipped {self.current_player.name}")
 
             else:
-                raise Exception(f"player status error {player.debug_()}")
+                raise Exception(f"player status error {player.debug()}")
 
             self.current_player = self.next_player
 
+
+game=procedures()
+game.status = True
+game.plr_num = 4
+game.create()
+
+for i in range(game.plr_num):
+    b=com.api("input","name: ")
+    game.players.append(player(i+1, b, False))
+
+for i in game.players:
+    i.create_neighbors(game.players)
+    game.deal(i, 7)
+
+for cards in game.deck:
+    if not cards.special:
+        game.current = cards
+        game.played.append(game.current)
+        break
+
+game.clockwise = True
+game.current_player = game.players[0]
+game.gen_next_player()
+game.gameloop()
+
+com.api("output",f"{winner.name} wins!!!")
