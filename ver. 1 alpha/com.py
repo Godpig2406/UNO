@@ -1,6 +1,5 @@
 import os
 
-
 def api(mode, content):
     if mode == "input":
         return input(content)

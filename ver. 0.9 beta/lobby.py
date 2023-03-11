@@ -6,9 +6,7 @@ game=procedures([num_player])
 game.debug = False
 game.create()
 
-for i in range(num_player):
-    b=api("input","name: ")
-    game.players.append(player(i+1, b, False))
+game.players.extend([player(i+1, api("input","name: "), False) for i in range(num_player)])
 
 for i in game.players:
     i.create_neighbors(game.players)
@@ -26,3 +24,6 @@ game.gen_next_player()
 game.gameloop()
 
 print(f"{winner.name} wins!!!")
+
+
+

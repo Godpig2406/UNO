@@ -1,9 +1,6 @@
 import random
 import com
 
-ancestor_cards = []
-UIDs = [0]
-
 class card:
     def __init__(self, uid, special, color, properties, name):
         self.uid = uid
@@ -37,10 +34,10 @@ class card:
 
 class player:
 
-    def __init__(self, id, name, punished):
-        self.id = id
-        self.name = name
-        self.punished = punished
+    def __init__(self, **values):
+        self.id = values["id"]
+        self.name = values["name"]
+        self.punished = values["punished"]
         self.hand = []
         self.neighbors = []
         self.chosen = None
@@ -174,44 +171,44 @@ class player:
 
 
 class procedures:
-
-    def __init__(self):
-        self.status = None
-        self.plr_num = 0
-        self.deck = None
-        self.played = []
-        self.players = []
-        self.clockwise = True
-        self.current_player = None
-        self.next_player = None
-        self.current = None
-        self.debug = False
-        self.rounds=0
+    ancestor_cards=[]
+    Used_id=[0]
+    def __init__(self, **values): 
+        self.status = values["status"]
+        self.plr_num = values["plr_num"]
+        self.deck = values["deck"]
+        self.played = values["played"]
+        self.players = values["players"]
+        self.clockwise = values["clockwise"]
+        self.current_player = values["current_player"]
+        self.next_player = values["next_player"]
+        self.current = values["current"]
+        self.debug = values["debug"]
 
     def gen_Uid(self):
         while True:
-            UID = random.randint(0, 512)
-            if UID not in UIDs:
-                UIDs.append(UID)
+            Uid = random.randint(0, 512)
+            if Uid not in self.Used_id:
+                self.Used_id.append(Uid)
                 break
 
-        return UID
+        return Uid
 
     def create(self):
         for color in ["RED", "GREEN", "BLUE", "YELLOW"]:
-            ancestor_cards.append(card(self.gen_Uid(), True, color, "+2", f"{color} +2"))
-            ancestor_cards.append(card(self.gen_Uid(), True, color, "+2", f"{color} +2"))
-            ancestor_cards.append(card(self.gen_Uid(), True, color, "skip", f"{color} skip"))
-            ancestor_cards.append(card(self.gen_Uid(), True, color, "skip", f"{color} skip"))
-            ancestor_cards.append(card(self.gen_Uid(), True, color, "reverse", f"{color} reverse"))
-            ancestor_cards.append(card(self.gen_Uid(), True, color, "reverse", f"{color} reverse"))
-            ancestor_cards.append(card(self.gen_Uid(), True, "black", "+4", "Wild +4"))
-            ancestor_cards.append(card(self.gen_Uid(), True, "black", "change", "Change color"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, color, "+2", f"{color} +2"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, color, "+2", f"{color} +2"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, color, "skip", f"{color} skip"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, color, "skip", f"{color} skip"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, color, "reverse", f"{color} reverse"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, color, "reverse", f"{color} reverse"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, "black", "+4", "Wild +4"))
+            self.ancestor_cards.append(card(self.gen_Uid(), True, "black", "change", "Change color"))
             for num in [str(i) for i in range(10)]:
-                ancestor_cards.append(card(self.gen_Uid(), False, color, num, f"{color} {num}"))
-                ancestor_cards.append(card(self.gen_Uid(), False, color, num, f"{color} {num}"))
+                self.ancestor_cards.append(card(self.gen_Uid(), False, color, num, f"{color} {num}"))
+                self.ancestor_cards.append(card(self.gen_Uid(), False, color, num, f"{color} {num}"))
 
-        self.deck = ancestor_cards.copy()
+        self.deck = self.ancestor_cards.copy()
         random.shuffle(self.deck)
 
     def gen_next_player(self):
@@ -265,7 +262,6 @@ class procedures:
     def gameloop(self):
         global winner
         while True:
-            self.rounds += 1
             self.gen_next_player()
             if not self.current_player.punished:
                 self.current_player.check_playable(self.current)
@@ -296,15 +292,10 @@ class procedures:
 
             self.current_player = self.next_player
 
-
-game=procedures()
-game.status = True
-game.plr_num = 4
+game=procedures(status=True, plr_num=4, deck=None, played=[], players=[], clockwise=True, current_player=None, next_player=None, current=None, debug=False)
 game.create()
 
-for i in range(game.plr_num):
-    b=com.api("input","name: ")
-    game.players.append(player(i+1, b, False))
+game.players=[player(id=i+1, name=com.api("input","name: "), punished=False,) for i in range(game.plr_num)]
 
 for i in game.players:
     i.create_neighbors(game.players)
@@ -322,3 +313,4 @@ game.gen_next_player()
 game.gameloop()
 
 com.api("output",f"{winner.name} wins!!!")
+
