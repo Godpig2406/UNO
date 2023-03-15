@@ -1,44 +1,29 @@
 import socket
 import threading
 
-HEADER=64
-PORT=5050
-SERVER=socket.gethostbyname(socket.gethostname())
-ADDR=(SERVER, PORT)
-FORMAT="utf-8"
-DISCONNECT_MSG="disconnect"
-LIST=[]
+class port:
+    def __init__(self, **property):
+        self.id=dict()
+        self.size=property["size"]
+        self.address=property["address"]
+        self.server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind(self.address)
 
+    def hello(self):
+        self.recieve()
 
-server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(ADDR)
+    def join(self):
+        while True:
+            conn, addr = self.server.accept()
+            break
+            
 
-def handle_client(conn, addr):
-    print("New Player",addr)
+    def send(self,**message):
+        pass
 
-    connected = True
-    while connected:
-        msg_length=conn.recv(HEADER).decode(FORMAT)
-        if msg_length:
-            msg_length=int(msg_length)
-            msg=conn.recv(msg_length).decode(FORMAT)
-            if msg==DISCONNECT_MSG:
-                connected = False
-            print(addr,msg)
-            conn.send("recieved".encode(FORMAT))
-    
-    conn.close()
+    def recieve(self):
+        pass
 
+engine=port(address=("127.0.0.1",9090),size=3)
+engine.join()
 
-def start():
-    server.listen()
-    print(SERVER)
-    while True:
-        conn, addr = server.accept()
-        thread=threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
-        print("active connection:",threading.active_count()-1)
-
-
-print("Start Game")
-start()

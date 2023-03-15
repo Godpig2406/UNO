@@ -60,3 +60,7 @@ def api(**content):
 
 a=protocol()
 a.load(0.1)
+
+
+import server
+server.start_server()
