@@ -1,5 +1,18 @@
-import random
-import com
+import random, com, time, interpreter
+
+def api(**content):
+    global connection
+    match content["mode"]:
+        case "output":
+            print(content["text"])
+
+        case "input":
+            return input(content["text"])
+        
+        case "win":
+            msg=interpreter.translate(mode="encode", content=content["text"], form="win")
+            connection.write(msg)
+
 
 class card:
     def __init__(self, uid, special, color, properties, name):
@@ -12,7 +25,7 @@ class card:
     def change_color(self, player):
         while True:
             ask=f"{player.name}, please pick a color (B)lue, (G)reen, (R)ed, (Y)ellow \n"
-            line = com.api(mode="input", text=ask).upper()
+            line = api(mode="input", text=ask).upper()
             if line == "B" or line == "1":
                 self.color = "BLUE"
                 break
@@ -87,16 +100,16 @@ class player:
         avaliable_uid = [i.uid for i in self.avaliable]
         self.chosen = None
         while True:
-            com.api(mode="output", text=f"{self.name}'s turn")
+            api(mode="output", text=f"{self.name}'s turn")
             for i in range(len(self.hand)):
                 avaliable = ""
                 if self.hand[i].uid in avaliable_uid:
                     avaliable = "*"
 
-                com.api(mode="output", text=f"[{i}]{self.hand[i].name}{avaliable}")
+                api(mode="output", text=f"[{i}]{self.hand[i].name}{avaliable}")
 
-            com.api(mode="output", text=f"Current card on the table is: {game.current.name}")
-            choice = com.api(mode="input", text="Choose a Card or (D)raw: ")
+            api(mode="output", text=f"Current card on the table is: {game.current.name}")
+            choice = api(mode="input", text="Choose a Card or (D)raw: ")
 
             if choice == "":
                 continue
@@ -111,20 +124,20 @@ class player:
                         break
 
                     else:
-                        com.api(mode="output",text="Unvalid")
+                        api(mode="output",text="Unvalid")
                         continue
 
                 else:
-                    com.api(mode="output",text="Out of range")
+                    api(mode="output",text="Out of range")
                     continue
 
             elif choice.upper() == "D" or choice.upper() == "+":
                 game.deal(self, 1)
                 drawed=self.hand[-1]
                 if procedures.check_valid(game.current, drawed):
-                    a = com.api(mode="input", text=f"{self.name}, {drawed.name} is playable, (Y/n)")
+                    a = api(mode="input", text=f"{self.name}, {drawed.name} is playable, (Y/n)")
                     if a=="n" or a=="N" or a == "-":
-                        com.api(mode="output",text="ok")
+                        api(mode="output",text="ok")
                         self.chosen = None
 
                     else:
@@ -134,7 +147,7 @@ class player:
                 break
 
             else:
-                com.api(mode="output",text="input error")
+                api(mode="output",text="input error")
                 continue
 
     def special_effects(self, game):
@@ -261,7 +274,6 @@ class procedures:
             raise Exception("Comparing 2 cards")
 
     def gameloop(self):
-        global winner
         while True:
             self.gen_next_player()
             if not self.current_player.punished:
@@ -275,7 +287,7 @@ class procedures:
                     reversed = self.current_player.special_effects(self)
 
                     if reversed:
-                        com.api(mode="output",text="reversed")
+                        api(mode="output",text="reversed")
                         self.clockwise = not self.clockwise
                         self.gen_next_player()
 
@@ -286,17 +298,24 @@ class procedures:
 
             elif self.current_player.punished:
                 self.current_player.punished = False
-                com.api(mode="output", text=f"Skipped {self.current_player.name}")
+                api(mode="output", text=f"Skipped {self.current_player.name}")
 
             else:
                 raise Exception(f"player status error {player.debug()}")
 
             self.current_player = self.next_player
 
-game=procedures(status=True, plr_num=2, deck=None, played=[], players=[], clockwise=True, current_player=None, next_player=None, current=None, debug=False)
+
+game=procedures(status=True, plr_num=3, deck=None, played=[], players=[], clockwise=True, current_player=None, next_player=None, current=None, debug=False)
 game.create()
 
-game.players=[player(id=i+1, name=com.api(mode="input",text="name: "), punished=False,) for i in range(game.plr_num)]
+connection=com.start(game.plr_num)
+while len(com.connected) < game.plr_num:
+    time.sleep(1)
+    print("wait for join")
+
+names=list(com.connected.values())
+game.players=[player(id=i+1, name=names[i], punished=False,) for i in range(game.plr_num)]
 
 for i in game.players:
     i.create_neighbors(game.players)
@@ -314,4 +333,4 @@ game.current_player = game.players[0]
 game.gen_next_player()
 game.gameloop()
 
-com.api(mode="output",text=f"{winner.name} wins!!!")
+api(mode="win",text=f"{game.winner.name} wins!!!")

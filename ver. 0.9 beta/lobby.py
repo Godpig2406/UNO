@@ -24,6 +24,3 @@ game.gen_next_player()
 game.gameloop()
 
 print(f"{winner.name} wins!!!")
-
-
-

@@ -315,6 +315,3 @@ class procedures:
                 raise Exception(f"player status error {player.debug_()}")
 
             self.current_player = self.next_player
-
-
-
