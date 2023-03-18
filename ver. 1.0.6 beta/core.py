@@ -16,8 +16,6 @@ def api(**content):
         case "color":
             msg=interpreter.translate(mode='encode', text=content["text"], form='color')
             connection.write(msg)
-            reply=connection.receive()
-            return reply
 
         case "skip":
             msg=interpreter.translate(mode='encode', text=content["text"], form='skip')

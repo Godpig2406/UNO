@@ -1,18 +1,9 @@
-import socket, threading, interpreter
+import socket, threading
 
 ADMINPASS="admin"
 HOST = "127.0.0.1"
 PORT =  9090
 connected=dict()
-
-def verify(msg):
-    readable=interpreter.translate(mode='decode',text=msg)
-    if readable[0] == 'admin':
-        if readable[1] == 'admin' or readable[1] =='everyone':
-            if readable[2] == 'output':
-                print(readable[3:])
-
-
 class server:
     def __init__(self, **values):
         self.size = values["size"]
@@ -69,7 +60,7 @@ class infiltrate:
                 if msg =="name":
                     self.client.send(self.name.encode())
                 else:
-                    verify(msg)
+                    print(msg)
             except:
                 print("error")
                 self.client.close()
